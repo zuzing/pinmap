@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "client": "npm --prefix pinmap/client start",
-    "server": "npm --prefix pinmap/server run",
+    "server": "npm --prefix pinmap/server run dev",
     "dev": "concurrently \"npm run server\" \"npm run client\""
   },
   "keywords": [],
