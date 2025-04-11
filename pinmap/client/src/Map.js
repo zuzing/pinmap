@@ -5,39 +5,31 @@ import {
     Marker,
 } from '@vis.gl/react-google-maps';
 
-function Map() {
-    const [markers, setMarkers] = useState([]);
+function Map({pins, setPins}) {
     const mapRef = useRef(null);
 
-    const fetchVisiblePins = async () => {
-        if (!mapRef.current) return;
-
-        const bounds = mapRef.current.getBounds();
-        if (!bounds) return;
-
-        const ne = bounds.getNorthEast();
-        const sw = bounds.getSouthWest();
-
-        // TODO: get only pins in the visible area
-        // const url = process.env.REACT_APP_SERVER_API_URL + `/pins?neLat=${ne.lat()}&neLng=${ne.lng()}&swLat=${sw.lat()}&swLng=${sw.lng()}`;
-        const url = process.env.REACT_APP_SERVER_API_URL + `/pins`;
-        const res = await fetch(url);
-        const pins = await res.json();
-        setMarkers(pins);
-    };
-
     const onMapClick = useCallback(async (e) => {
-        const latLng = e.detail.latLng;
-        await fetch(process.env.REACT_APP_SERVER_API_URL + "/pin", {
+        const {lat, lng} = e.detail.latLng;
+
+        const geoJsonData = {
+            name: "New Pin",
+            loc: {
+                type: "Point",
+                coordinates: [lng, lat], // Note: coordinates are in [longitude, latitude] order
+            },
+        };
+
+        const res = await fetch(process.env.REACT_APP_SERVER_API_URL + "/pin", {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(latLng),
+            body: JSON.stringify(geoJsonData),
         });
 
-        setMarkers((prevMarkers) => {
-            return [...prevMarkers, latLng];
-        });
-    }, []);
+        if (res.ok) {
+            const newPin = await res.json();
+            setPins((prevPins) => [...prevPins, newPin]);
+        }
+    }, [setPins]);
 
 
     return (
@@ -48,10 +40,13 @@ function Map() {
                 defaultCenter={{lat: 50.06255275511061, lng: 19.939309651193764}}
                 defaultZoom={14}
                 onClick={onMapClick}
-                onIdle={() => fetchVisiblePins()}
             >
-            {markers.map((marker, idx) => (
-                <Marker key={idx} position={marker} />
+            {pins.map((pin, idx) => (
+                <Marker key={idx} position={{ //Note: coordinates are in [longitude, latitude] order
+                    lat: pin.loc.coordinates[1],
+                    lng: pin.loc.coordinates[0],
+                }}
+                />
             ))}
             </GoogleMap>
         </APIProvider>

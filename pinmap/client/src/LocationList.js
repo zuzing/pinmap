@@ -1,37 +1,61 @@
-import {useEffect, useState} from 'react';
-
+import { useState, useEffect, useMemo } from 'react';
 import LocationEntry from './LocationEntry';
 
-
-function LocationList() {
-    const [locations, setLocations] = useState([]);
+function LocationList({ pins, setPins }) {
+    const PAGE_SIZE = 5;
     const [page, setPage] = useState(1);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [sortAsc, setSortAsc] = useState(true);
 
+    // Filter and sort pins
+    const filteredPins = useMemo(() => {
+        return pins
+            .filter(pin => pin.name.toLowerCase().includes(searchQuery.toLowerCase()))
+            .sort((a, b) =>
+                sortAsc ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)
+            );
+    }, [pins, searchQuery, sortAsc]);
+
+    const maxPage = Math.ceil(filteredPins.length / PAGE_SIZE);
+    const paginatedPins = filteredPins.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+    // Reset to page 1 when search or sort changes
     useEffect(() => {
-        const locations = fetch(process.env.REACT_APP_SERVER_API_URL + `/locations?page=${page}&limit=5`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {setLocations(data.data);})
-        .catch(error => console.error('Error fetching locations:', error));
-    }, [page]);
+        setPage(1);
+    }, [searchQuery, sortAsc]);
 
+    const handleNext = () => setPage((prev) => Math.min(prev + 1, maxPage));
+    const handlePrev = () => setPage((prev) => Math.max(prev - 1, 1));
+    const toggleSort = () => setSortAsc(prev => !prev);
 
     return (
         <div className="location-list">
-            <p text={locations} />
-            {locations.map(location => (
-                <LocationEntry key={location.id} location={location} />
-            ))}
+            <div className="controls">
+                <input
+                    type="text"
+                    placeholder="Szukaj po nazwie..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <button onClick={toggleSort}>
+                    Sortuj: {sortAsc ? 'A-Z' : 'Z-A'}
+                </button>
+            </div>
+
+            {paginatedPins.length === 0 ? (
+                <p>Brak wyników.</p>
+            ) : (
+                paginatedPins.map(pin => (
+                    <LocationEntry key={pin._id} pin={pin} setPins={setPins} />
+                ))
+            )}
 
             <div className="pagination-controls">
-                <button onClick={() => setPage(page - 1)} disabled={page === 1}>
+                <button onClick={handlePrev} disabled={page === 1}>
                     Poprzednia
                 </button>
-                <button onClick={() => setPage(page + 1)} disabled={locations.length < 5}>
+                <span>{page} / {maxPage || 1}</span>
+                <button onClick={handleNext} disabled={page === maxPage || maxPage === 0}>
                     Następna
                 </button>
             </div>
