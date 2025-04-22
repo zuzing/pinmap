@@ -1,6 +1,10 @@
 {
   "name": "pinmap",
   "version": "1.0.0",
+  "workspaces": [
+    "client",
+    "server"
+  ],
   "description": "",
   "main": "index.js",
   "scripts": {

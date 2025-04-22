@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect} from "react";
+import { useState, useCallback} from "react";
 import {
     APIProvider,
     Map as GoogleMap,
@@ -6,8 +6,6 @@ import {
 } from '@vis.gl/react-google-maps';
 
 function Map({pins, setPins}) {
-    const mapRef = useRef(null);
-
     const onMapClick = useCallback(async (e) => {
         const {lat, lng} = e.detail.latLng;
 
@@ -29,13 +27,12 @@ function Map({pins, setPins}) {
             const newPin = await res.json();
             setPins((prevPins) => [...prevPins, newPin]);
         }
-    }, [setPins]);
+    }, [pins]);
 
 
     return (
         <APIProvider apiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
             <GoogleMap
-                ref={mapRef}
                 style={{width: '100%',height: '500px',}}
                 defaultCenter={{lat: 50.06255275511061, lng: 19.939309651193764}}
                 defaultZoom={14}
